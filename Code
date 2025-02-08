@@ -1,0 +1,219 @@
+Code used to investage the motion of an electron in a laser field
+
+import numpy as np
+import scipy as sc
+import matplotlib.pyplot as plt
+from scipy.fft import fft, ifft, fftfreq
+
+#Force Equations, Newtonian Method
+#Constraints
+x = 0
+v = 0
+
+#  SI Base
+A = 46496339333.303825
+m=9.10938291*10**(-31)
+q=1.602176565*10**(-19)
+c=299792458
+l=800*10**(-9)
+w=2*np.pi*c/l
+
+
+#Atomic Units
+#A = 0.4717# AMPLITUDE
+#A = 0.9203567964
+A = 0.09056
+q = 1 # Electron Charge
+m = 1 # Electron Mass
+c = 137.035999
+w = 2*np.pi * c /(15117.8091) # in nm
+#w = 0.057
+T = q * A / m
+Phi = np.linspace(0, np.pi/2, 100000)
+t = np.linspace(0, np.pi*4 / w, 100000)
+
+
+#Test, add the coulomb force?
+
+#Parameters
+p = 0.30963491950322447
+E = A * np.cos(w * t + p) # E Field
+a = q*E / m # Force Equations
+v = (T/w) *(np.sin(w*t+p) - np.sin(p))
+x = -(T/w**2) * (np.cos(w*t+p) -np.cos(p)) -  (T/w)* np.sin(p)*t
+idx = np.argwhere(np.diff(np.sign(x))).flatten()
+plt.plot(t[idx], x[idx], 'ro')
+print(t[idx])
+KE = 1/2 * m * v**2
+plt.plot(t, x, label = 'Position')
+plt.plot(t, a, label = 'Acceleration')
+plt.plot(t, v, label = 'Velocity')
+plt.xlabel('Time')
+plt.ylabel('Amplitude')
+plt.grid(True, alpha = 0.3)
+plt.legend()
+plt.xlim(0,100)
+plt.ylim(-50,35)
+plt.show()
+plt.close()
+#Plot of Kinetic energy as a function of time
+plt.plot(t, KE)
+plt.xlabel('Time')
+plt.ylabel('Kinetic Energy')
+plt.grid(True, alpha = 0.3)
+plt.show()
+plt.close()
+
+A = 46496339333.303825
+m=9.10938291*10**(-31)
+q=1.602176565*10**(-19)
+c=299792458
+l=800*10**(-9)
+w=2*np.pi*c/l
+T = q * A / m
+Phi = np.linspace(0, np.pi/2, 5000)
+t = np.linspace(0, np.pi*4 / w, 10000)
+
+
+# range of phi values
+# over a range of Time
+Phicount = []
+KEcount = []
+Times =[]
+for n in range(0, np.shape(Phi)[0]):
+  x = -(T/w**2) * np.cos(w*t+Phi[n]) - (T/w)* np.sin(Phi[n])*t + (T/w**2) * np.cos(Phi[n])
+  idx = np.argwhere(np.diff(np.sign(x))).flatten()
+  if np.shape(idx)[0] == 1:
+    cidx = idx[0]
+  elif np.shape(idx)[0] > 1:
+    cidx = idx[1]
+  v = (T/w) * np.sin(w*(t[cidx])+Phi[n]) - (T/w) * np.sin(Phi[n])
+  KE = 1/2 * m * v**2
+  KEcount.append(KE / q)
+  Phicount.append(Phi[n])
+  Times.append(t[cidx])
+plt.plot(Phicount, KEcount)
+plt.xlabel('Phase Difference (Radians)')
+plt.ylabel('Kinetic Energy (Ev)')
+plt.grid(True, alpha = 0.3)
+plt.show()
+plt.close()
+print(Times)
+
+
+# to check where and what the max of a certain array is
+def index_max(A):
+  x = np.max(A)
+  for n in range(0,np.shape(A)[0]):
+    diff = x - A[n]
+    if diff == 0:
+      index = n
+      return(x, index)
+
+max, idx = index_max(KEcount)
+print(Phicount[idx] / w, max)
+
+
+
+
+
+
+#Laser Model
+N = 100000
+T = 10*10**(-17)/ N
+t = np.linspace(0, T*N, N, endpoint=False)
+h = 6.2606957 * 10 **(-34)
+hbar = 1.054571726*10**(-34)
+e = 1.602176565*10**(-19)
+Ip = 54.4
+U = ((e*A)**2)/(4*m*w**2)/e
+
+Ecut = Ip + (3.17 * U)
+print(Ecut, 'Expected Cut Off Energy')
+Wcut = Ecut*e / hbar
+print(Wcut / 2*np.pi, 'Expected Cut off Frequency')
+E = np.add(KEcount, 54.4)
+wE = np.divide(E, 6.582119569*10**(-16))
+s = 0
+for n in range(0, np.shape(wE)[0]):
+  s = s + np.sin((wE[n]*t)+ w*Times[n])
+I = np.multiply(s,s)
+c = 1.327209365*10**(-3)
+I = np.multiply(I,c)
+plt.plot(t, I)
+plt.grid(True, alpha = 0.3)
+plt.minorticks_on
+plt.xlabel('Time / s')
+plt.ylabel('Intensity / Arb. Units')
+plt.show()
+plt.close()
+
+plt.plot(t, s)
+plt.grid(True, alpha = 0.3)
+plt.minorticks_on
+plt.xlabel('Time / s')
+plt.ylabel('E-Field / Arb. Units')
+plt.show()
+plt.close()
+
+print(np.min(I))
+print(np.shape(I)[0])
+
+halfmax = np.max(I) / 2
+idx = np.argwhere(np.diff(np.sign(I-halfmax))).flatten()
+FWHM = t[idx[1]] - t[idx[0]]
+print(FWHM, 'FWHM')
+
+
+index = np.argsort(I)
+Width = t[index[0]] - t[index[1]]
+print(t[index[0]], t[index[1]])
+print(Width, 'Full Width')
+
+
+#plt.plot(wl, 2.0/N * np.abs(yf[0:N//2]))
+#wl = np.linspace(0, 1200*np.max(wE)/(2*np.pi), np.shape(wE)[0])
+
+N = 100000 #Resolution
+T = 10 * 10**(-17)/ N #Time Interval
+t = np.linspace(0, T*N, N, endpoint=False) # total time over which we consider the intensity
+from scipy.signal.windows import blackman
+Window = blackman(N)
+
+yf = fft(s*Window) #taking the fourier transform of the intensity plot
+xf = fftfreq(N, T)[:N//2] #????
+wl = np.linspace(0, w, 50000)
+print(np.max(xf), 'Max xf')
+plt.plot(xf, 2.0/N * np.abs(yf[0:N//2])) #plotting
+plt.xlim(-0.05*10**17, 0.4*10**17)
+plt.grid()
+plt.show()
+
+
+yf = fft(I*Window) #taking the fourier transform of the intensity plot
+xf = fftfreq(N, T)[:N//2] #???
+
+Fs = (wE/ w*np.pi)[:N//2]
+wl = np.linspace(0, w, 50000)
+print(np.max(xf), 'Max xf')
+plt.plot(xf, 2.0/N * np.abs(yf[0:N//2]))#plotting
+plt.xlim(-0.05*10**17, 0.6*10**17)
+plt.grid()
+plt.show()
+plt.plot(wl, np.abs(yf[0:N//2]))
+plt.xlim(-0.05*10**17, 0.6*10**17)
+plt.show()
+
+
+
+#TESTING
+t = np.linspace(0, np.pi*4 / w, 10000)
+E = A * np.cos(w * t + p) # E Field
+DrivenFourier = np.abs(fft(E))
+l = np.linspace(0, w, 10000)
+plt.xlim(w-.001 * w,w+ 0.001 * w)
+plt.plot(l, DrivenFourier)
+plt.show()
+plt.close()
+print(w, 'Frequency')
+#Indeed we see that there exists 1 point at precisely w.
