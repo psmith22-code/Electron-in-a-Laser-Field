@@ -4,7 +4,7 @@ import numpy as np
 import scipy as sc
 import matplotlib.pyplot as plt
 from scipy.fft import fft, ifft, fftfreq
-
+import sympy as sp
 #Force Equations, Newtonian Method
 #Constraints
 x = 0
@@ -48,8 +48,8 @@ KE = 1/2 * m * v**2
 plt.plot(t, x, label = 'Position')
 plt.plot(t, a, label = 'Acceleration')
 plt.plot(t, v, label = 'Velocity')
-plt.xlabel('Time')
-plt.ylabel('Amplitude')
+plt.xlabel('Time / a.u. ')
+plt.ylabel('Amplitude/ Arb. units')
 plt.grid(True, alpha = 0.3)
 plt.legend()
 plt.xlim(0,100)
@@ -94,7 +94,7 @@ for n in range(0, np.shape(Phi)[0]):
   Times.append(t[cidx])
 plt.plot(Phicount, KEcount)
 plt.xlabel('Phase Difference (Radians)')
-plt.ylabel('Kinetic Energy (Ev)')
+plt.ylabel('Kinetic Energy (eV)')
 plt.grid(True, alpha = 0.3)
 plt.show()
 plt.close()
